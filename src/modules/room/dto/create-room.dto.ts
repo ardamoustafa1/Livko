@@ -39,4 +39,9 @@ export class CreateRoomDto {
   @IsBoolean()
   @Type(() => Boolean)
   isAccessible?: boolean;
+
+  @ApiPropertyOptional({ description: 'Area in square meters' })
+  @IsOptional()
+  @Type(() => Number)
+  areaSqm?: number | null;
 }

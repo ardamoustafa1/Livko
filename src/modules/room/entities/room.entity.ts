@@ -31,6 +31,9 @@ export class Room extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   isAccessible: boolean;
 
+  @Column({ type: 'float', name: 'area_sqm', nullable: true })
+  areaSqm: number | null;
+
   @OneToMany(() => QrCode, (q) => q.room)
   qrCodes: QrCode[];
 }
