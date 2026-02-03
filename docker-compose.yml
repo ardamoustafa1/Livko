@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: indoor-nav-api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      API_PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-long}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-navuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-navpass}
+      POSTGRES_DB: ${POSTGRES_DB:-indoor_navigation}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: 0
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-navpass}
+      ROUTE_SERVICE_URL: http://route-service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      neo4j:
+        condition: service_started
+      route-service:
+        condition: service_started
+    restart: unless-stopped
+
+  route-service:
+    build:
+      context: ./route-service
+      dockerfile: Dockerfile
+    container_name: indoor-nav-route-service
+    ports:
+      - "8000:8000"
+    environment:
+      neo4j_uri: bolt://neo4j:7687
+      neo4j_username: neo4j
+      neo4j_password: ${NEO4J_PASSWORD:-navpass}
+    depends_on:
+      neo4j:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: indoor-nav-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-navuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-navpass}
+      POSTGRES_DB: ${POSTGRES_DB:-indoor_navigation}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-navuser} -d ${POSTGRES_DB:-indoor_navigation}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5.15.0
+    container_name: indoor-nav-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-navpass}
+    volumes:
+      - neo4j_data:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: indoor-nav-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  redis_data:
