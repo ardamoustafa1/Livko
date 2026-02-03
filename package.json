@@ -22,7 +22,10 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/typeorm.config.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/config/typeorm.config.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
-    "seed:floor-plan": "ts-node -r tsconfig-paths/register src/database/seed-floor-plan.ts"
+    "seed:floor-plan": "ts-node -r tsconfig-paths/register src/database/seed-floor-plan.ts",
+    "seed:neo4j-graph": "ts-node -r tsconfig-paths/register src/database/seed-neo4j-graph.ts",
+    "seed:qr-codes": "ts-node -r tsconfig-paths/register src/database/seed-qr-codes.ts",
+    "seed:all": "npm run seed:floor-plan && npm run seed:neo4j-graph && npm run seed:qr-codes"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
@@ -32,6 +35,8 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/swagger": "^7.2.0",
+    "@nestjs/terminus": "^10.2.0",
+    "@nestjs/throttler": "^5.1.1",
     "@nestjs/typeorm": "^10.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",

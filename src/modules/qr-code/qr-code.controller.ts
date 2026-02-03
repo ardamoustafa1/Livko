@@ -15,6 +15,7 @@ import { QrCodeService } from './qr-code.service';
 import { CreateQrCodeDto } from './dto/create-qr-code.dto';
 import { UpdateQrCodeDto } from './dto/update-qr-code.dto';
 import { ResolveQrResponseDto } from './dto/resolve-qr-response.dto';
+import { QrPayloadDto } from './dto/qr-payload.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -41,6 +42,21 @@ export class QrCodeController {
     const result = await this.service.resolveToNode(code);
     if (!result) return null;
     return result as ResolveQrResponseDto;
+  }
+
+  @Get('for-room/:roomId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get QR payload for a room (for printing physical QR)' })
+  async getForRoom(@Param('roomId', ParseUUIDPipe) roomId: string): Promise<QrPayloadDto | null> {
+    return this.service.getQrPayloadForRoom(roomId);
+  }
+
+  @Get('for-code/:code')
+  @ApiOperation({ summary: 'Get QR payload by code (public; for label printing)' })
+  async getForCode(@Param('code') code: string): Promise<QrPayloadDto | null> {
+    return this.service.getQrPayloadForCode(code);
   }
 
   @Get()

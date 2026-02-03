@@ -3,12 +3,16 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { LoggingInterceptor } from './shared/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({ origin: process.env.CORS_ORIGIN || '*', credentials: true });
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
+    new LoggingInterceptor(),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -44,7 +48,7 @@ async function bootstrap() {
     .addTag('Emergency', 'Emergency mode and state')
     .addTag('Admin', 'Administrative operations')
     .addTag('Labels', 'Multi-language labels')
-    .addTag('Health', 'Health check')
+    .addTag('Health', 'Health and readiness probes')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

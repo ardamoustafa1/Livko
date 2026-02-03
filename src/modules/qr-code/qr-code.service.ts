@@ -1,4 +1,5 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QrCode } from './entities/qr-code.entity';
@@ -15,7 +16,44 @@ export class QrCodeService {
     @InjectRepository(QrCode)
     private readonly repo: Repository<QrCode>,
     private readonly redis: RedisService,
+    private readonly config: ConfigService,
   ) {}
+
+  /** Base URL for printed QR (e.g. https://nav.example.com). */
+  private getBaseUrl(): string {
+    return (this.config.get<string>('QR_BASE_URL') || '').replace(/\/$/, '');
+  }
+
+  /** Build suggested URL and qrContent for a code (for printing physical QR). */
+  async getQrPayloadForCode(code: string): Promise<{ code: string; suggestedUrl: string; qrContent: string; nodeId?: string; label?: string } | null> {
+    const entity = await this.repo.findOne({ where: { code }, relations: ['room'] });
+    if (!entity) return null;
+    const base = this.getBaseUrl();
+    const suggestedUrl = base ? `${base}?code=${encodeURIComponent(entity.code)}` : entity.code;
+    const label = entity.room?.name ?? entity.code;
+    return {
+      code: entity.code,
+      suggestedUrl,
+      qrContent: suggestedUrl,
+      nodeId: entity.graphNodeId ?? undefined,
+      label,
+    };
+  }
+
+  async getQrPayloadForRoom(roomId: string): Promise<{ code: string; suggestedUrl: string; qrContent: string; nodeId?: string; label?: string } | null> {
+    const entity = await this.repo.findOne({ where: { roomId }, relations: ['room'] });
+    if (!entity) return null;
+    const base = this.getBaseUrl();
+    const suggestedUrl = base ? `${base}?code=${encodeURIComponent(entity.code)}` : entity.code;
+    const label = entity.room?.name ?? entity.code;
+    return {
+      code: entity.code,
+      suggestedUrl,
+      qrContent: suggestedUrl,
+      nodeId: entity.graphNodeId ?? undefined,
+      label,
+    };
+  }
 
   async create(dto: CreateQrCodeDto): Promise<QrCode> {
     const existing = await this.repo.findOne({ where: { code: dto.code } });
